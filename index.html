@@ -1,0 +1,784 @@
+<!DOCTYPE html>
+<html lang="es" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PharmaSupply Ecosystem | Architecture & System Design Blueprint</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Montserrat:wght@600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#0A4D68',
+                        secondary: '#088395',
+                        accent: '#10B981',
+                        darkbg: '#04131D',
+                        glassborder: 'rgba(255, 255, 255, 0.18)',
+                        glassbg: 'rgba(255, 255, 255, 0.06)',
+                        glasshover: 'rgba(255, 255, 255, 0.12)'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        heading: ['Montserrat', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace']
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        :root {
+            --color-primary: #0A4D68;
+            --color-secondary: #088395;
+            --color-accent: #10B981;
+            --bg-dark-mesh: #04131D;
+            --glass-blur: blur(20px);
+            --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.45);
+            --glow-cyan: 0 0 25px rgba(8, 131, 149, 0.45);
+            --glow-emerald: 0 0 25px rgba(16, 185, 129, 0.45);
+        }
+
+        body {
+            background-color: var(--bg-dark-mesh);
+            color: #FFFFFF;
+            font-family: 'Inter', sans-serif;
+            overflow-x: hidden;
+        }
+
+        /* Ambient Animated Glowing Orbs */
+        .ambient-orb {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(100px);
+            z-index: 0;
+            pointer-events: none;
+            opacity: 0.55;
+            animation: floatOrb 20s ease-in-out infinite alternate;
+        }
+
+        .orb-1 {
+            width: 500px;
+            height: 500px;
+            background: radial-gradient(circle, rgba(8, 131, 149, 0.7) 0%, rgba(10, 77, 104, 0) 70%);
+            top: -120px;
+            left: -100px;
+        }
+
+        .orb-2 {
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(16, 185, 129, 0.5) 0%, rgba(8, 131, 149, 0) 70%);
+            top: 45%;
+            right: -150px;
+            animation-duration: 24s;
+            animation-delay: -6s;
+        }
+
+        .orb-3 {
+            width: 450px;
+            height: 450px;
+            background: radial-gradient(circle, rgba(10, 77, 104, 0.85) 0%, rgba(4, 19, 29, 0) 70%);
+            bottom: -80px;
+            left: 25%;
+            animation-duration: 28s;
+            animation-delay: -12s;
+        }
+
+        @keyframes floatOrb {
+            0% { transform: translate(0, 0) scale(1); }
+            50% { transform: translate(70px, 50px) scale(1.08); }
+            100% { transform: translate(-50px, 90px) scale(0.95); }
+        }
+
+        /* Glassmorphism Generic Component */
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: var(--glass-blur);
+            -webkit-backdrop-filter: var(--glass-blur);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 20px;
+            box-shadow: var(--glass-shadow);
+            transition: all 0.35s cubic-bezier(0.165, 0.84, 0.44, 1);
+        }
+
+        .glass-panel-hover:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(8, 131, 149, 0.6);
+            transform: translateY(-4px);
+            box-shadow: 0 15px 35px rgba(8, 131, 149, 0.2), var(--glow-cyan);
+        }
+
+        .glass-btn {
+            background: linear-gradient(135deg, rgba(10, 77, 104, 0.85) 0%, rgba(8, 131, 149, 0.9) 100%);
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+
+        .glass-btn:hover {
+            background: linear-gradient(135deg, rgba(8, 131, 149, 0.95) 0%, rgba(16, 185, 129, 0.9) 100%);
+            border-color: #6EE7B7;
+            box-shadow: var(--glow-emerald);
+            transform: translateY(-2px);
+        }
+
+        /* Animated Pulse Lines for Integration Diagram */
+        .pulse-line {
+            stroke-dasharray: 8;
+            animation: dash 30s linear infinite;
+        }
+
+        @keyframes dash {
+            to {
+                stroke-dashoffset: -1000;
+            }
+        }
+
+        /* Scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(4, 19, 29, 0.8);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(8, 131, 149, 0.5);
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(16, 185, 129, 0.8);
+        }
+    </style>
+</head>
+<body class="relative min-h-screen text-slate-100 selection:bg-teal-500 selection:text-white">
+
+    <!-- Ambient Glowing Orbs -->
+    <div class="ambient-orb orb-1"></div>
+    <div class="ambient-orb orb-2"></div>
+    <div class="ambient-orb orb-3"></div>
+
+    <div class="relative z-10 flex flex-col min-h-screen">
+        
+        <!-- Header / Navigation Bar -->
+        <header class="sticky top-0 z-40 w-full backdrop-blur-xl bg-slate-950/60 border-b border-white/10 px-4 lg:px-8 py-3.5">
+            <div class="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500 to-emerald-400 p-0.5 flex items-center justify-center shadow-lg shadow-cyan-500/20">
+                        <div class="w-full h-full bg-slate-950 rounded-[10px] flex items-center justify-center">
+                            <i class="fa-solid fa-network-wired text-emerald-400 text-lg"></i>
+                        </div>
+                    </div>
+                    <div>
+                        <h1 class="font-heading font-extrabold text-lg tracking-tight text-white flex items-center gap-2">
+                            PharmaSupply <span class="text-xs px-2 py-0.5 rounded-full bg-cyan-500/20 border border-cyan-400/30 text-cyan-300 font-mono">System Blueprint 2026</span>
+                        </h1>
+                        <p class="text-xs text-slate-400">Arquitectura de Integración & Modelo de Reciclaje Operativo</p>
+                    </div>
+                </div>
+
+                <!-- Navigation Tabs -->
+                <nav class="flex items-center space-x-1 bg-slate-900/80 p-1.5 rounded-2xl border border-white/10 backdrop-blur-md">
+                    <button onclick="switchTab('global')" id="tab-global" class="nav-tab px-4 py-2 rounded-xl text-xs font-semibold transition-all flex items-center gap-2 bg-gradient-to-r from-cyan-600 to-teal-600 text-white shadow-md">
+                        <i class="fa-solid fa-diagram-project text-emerald-300"></i> Visión Global & Flujo
+                    </button>
+                    <button onclick="switchTab('landing')" id="tab-landing" class="nav-tab px-4 py-2 rounded-xl text-xs font-semibold text-slate-300 hover:text-white hover:bg-white/5 transition-all flex items-center gap-2">
+                        <i class="fa-solid fa-laptop-medical"></i> Landing Page
+                    </button>
+                    <button onclick="switchTab('ecommerce')" id="tab-ecommerce" class="nav-tab px-4 py-2 rounded-xl text-xs font-semibold text-slate-300 hover:text-white hover:bg-white/5 transition-all flex items-center gap-2">
+                        <i class="fa-solid fa-store"></i> E-Commerce B2C/B2B
+                    </button>
+                    <button onclick="switchTab('erp')" id="tab-erp" class="nav-tab px-4 py-2 rounded-xl text-xs font-semibold text-slate-300 hover:text-white hover:bg-white/5 transition-all flex items-center gap-2">
+                        <i class="fa-solid fa-hospital-user"></i> Control ERP / HIS
+                    </button>
+                </nav>
+            </div>
+        </header>
+
+        <!-- Main Content Area -->
+        <main class="flex-grow max-w-7xl w-full mx-auto px-4 lg:px-8 py-8">
+            
+            <!-- TAB 1: VISION GLOBAL & INTEGRATION FLOW -->
+            <section id="content-global" class="tab-content space-y-8">
+                <!-- Interactive Flow Diagram Container -->
+                <div class="glass-panel p-6 lg:p-8 relative overflow-hidden">
+                    <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6">
+                        <div>
+                            <span class="text-xs font-mono font-bold tracking-widest text-emerald-400 uppercase">Arquitectura Unificada de Datos</span>
+                            <h2 class="text-2xl font-heading font-extrabold text-white mt-1">Diagrama Interactivo de Comunicación e Integración</h2>
+                            <p class="text-sm text-slate-400 mt-1">Haz clic en cualquier módulo o nodo de sincronización para explorar su lógica técnica y requerimientos.</p>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <div class="flex items-center gap-2 text-xs text-slate-300 bg-slate-900/70 px-3 py-1.5 rounded-lg border border-slate-700">
+                                <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span> Websockets / Real-Time
+                            </div>
+                            <div class="flex items-center gap-2 text-xs text-slate-300 bg-slate-900/70 px-3 py-1.5 rounded-lg border border-slate-700">
+                                <span class="w-2.5 h-2.5 rounded-full bg-cyan-400"></span> REST API / JWT
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Flow Diagram Grid Cards -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 relative z-10">
+                        
+                        <!-- Node 1: Landing Page -->
+                        <div onclick="selectNode('node-landing')" id="card-node-landing" class="glass-panel glass-panel-hover p-5 cursor-pointer border-l-4 border-l-cyan-400 relative">
+                            <div class="flex items-center justify-between mb-3">
+                                <div class="w-10 h-10 rounded-xl bg-cyan-500/20 border border-cyan-400/40 flex items-center justify-center text-cyan-300">
+                                    <i class="fa-solid fa-globe text-lg"></i>
+                                </div>
+                                <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-800">Front-Public</span>
+                            </div>
+                            <h3 class="font-heading font-bold text-base text-white">1. Sitio Web & Landing Page</h3>
+                            <p class="text-xs text-slate-400 mt-1">Captación de leads B2B, certificaciones sanitarias y rastreo IoT público.</p>
+                            <div class="mt-4 pt-3 border-t border-white/10 flex items-center justify-between text-xs text-cyan-300 font-semibold">
+                                <span>3 Componentes Principales</span>
+                                <i class="fa-solid fa-chevron-right text-xs"></i>
+                            </div>
+                        </div>
+
+                        <!-- Node 2: E-Commerce -->
+                        <div onclick="selectNode('node-ecommerce')" id="card-node-ecommerce" class="glass-panel glass-panel-hover p-5 cursor-pointer border-l-4 border-l-emerald-400 relative">
+                            <div class="flex items-center justify-between mb-3">
+                                <div class="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-400/40 flex items-center justify-center text-emerald-300">
+                                    <i class="fa-solid fa-cart-shopping text-lg"></i>
+                                </div>
+                                <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-800">Transaccional</span>
+                            </div>
+                            <h3 class="font-heading font-bold text-base text-white">2. E-Commerce Farmacéutico</h3>
+                            <p class="text-xs text-slate-400 mt-1">Portal B2C / B2B, catálogo por principio activo y carga de recetas/licencias.</p>
+                            <div class="mt-4 pt-3 border-t border-white/10 flex items-center justify-between text-xs text-emerald-300 font-semibold">
+                                <span>4 Módulos de Venta</span>
+                                <i class="fa-solid fa-chevron-right text-xs"></i>
+                            </div>
+                        </div>
+
+                        <!-- Node 3: ERP / HIS Control Interno -->
+                        <div onclick="selectNode('node-erp')" id="card-node-erp" class="glass-panel glass-panel-hover p-5 cursor-pointer border-l-4 border-l-blue-500 relative">
+                            <div class="flex items-center justify-between mb-3">
+                                <div class="w-10 h-10 rounded-xl bg-blue-500/20 border border-blue-400/40 flex items-center justify-center text-blue-300">
+                                    <i class="fa-solid fa-hospital-user text-lg"></i>
+                                </div>
+                                <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-blue-950 text-blue-300 border border-blue-800">Core ERP / HIS</span>
+                            </div>
+                            <h3 class="font-heading font-bold text-base text-white">3. Control Interno ERP / HIS</h3>
+                            <p class="text-xs text-slate-400 mt-1">Expediente Clínico Electrónico, Kardex, inventarios por lote y proveedores.</p>
+                            <div class="mt-4 pt-3 border-t border-white/10 flex items-center justify-between text-xs text-blue-300 font-semibold">
+                                <span>5 Núcleos Operativos</span>
+                                <i class="fa-solid fa-chevron-right text-xs"></i>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <!-- Central Integration Pipeline Banner -->
+                    <div class="mt-6 p-4 rounded-2xl bg-gradient-to-r from-slate-900/90 via-cyan-950/60 to-slate-900/90 border border-cyan-500/30 flex flex-col md:flex-row items-center justify-between gap-4">
+                        <div class="flex items-center gap-3">
+                            <div class="p-3 rounded-xl bg-cyan-500/20 text-cyan-300 border border-cyan-400/30">
+                                <i class="fa-solid fa-server text-xl"></i>
+                            </div>
+                            <div>
+                                <h4 class="text-sm font-heading font-bold text-white">API Gateway Central & Middleware SSO (JWT)</h4>
+                                <p class="text-xs text-slate-300">Orquestador de solicitudes de inventario en tiempo real, validación de licencias y sincronización con base de datos única.</p>
+                            </div>
+                        </div>
+                        <button onclick="selectNode('node-gateway')" class="glass-btn px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap">
+                            Ver Especificación de API
+                        </button>
+                    </div>
+
+                    <!-- Dynamic Node Inspector Drawer -->
+                    <div id="node-inspector" class="mt-6 p-6 rounded-2xl bg-slate-900/90 border border-white/15 transition-all">
+                        <!-- Populated dynamically via JS -->
+                    </div>
+                </div>
+
+                <!-- Matrix of Reusability (Gap Analysis Summary) -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="glass-panel p-6 border-t-4 border-t-emerald-400">
+                        <div class="flex items-center gap-3 mb-4">
+                            <div class="p-2.5 rounded-xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                                <i class="fa-solid fa-recycle text-lg"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-heading font-bold text-base text-white">Lo que SÍ se Recicla</h3>
+                                <p class="text-xs text-slate-400">Componentes del sistema base reutilizables</p>
+                            </div>
+                        </div>
+                        <ul class="space-y-2.5 text-xs text-slate-300">
+                            <li class="flex items-start gap-2">
+                                <i class="fa-solid fa-circle-check text-emerald-400 mt-0.5"></i>
+                                <span><strong>Motor de Cotizaciones:</strong> Renderizado PDF, cálculo de importes y descuentos.</span>
+                            </li>
+                            <li class="flex items-start gap-2">
+                                <i class="fa-solid fa-circle-check text-emerald-400 mt-0.5"></i>
+                                <span><strong>Gestión de Clientes:</strong> Cuentas de empresa y contactos múltiples.</span>
+                            </li>
+                            <li class="flex items-start gap-2">
+                                <i class="fa-solid fa-circle-check text-emerald-400 mt-0.5"></i>
+                                <span><strong>Pasarela de Pagos:</strong> Integración existente para transacciones B2C.</span>
+                            </li>
+                            <li class="flex items-start gap-2">
+                                <i class="fa-solid fa-circle-check text-emerald-400 mt-0.5"></i>
+                                <span><strong>Chat & Ticketera:</strong> Comunicación directa médico-paciente y soporte B2B.</span>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <div class="glass-panel p-6 border-t-4 border-t-amber-400">
+                        <div class="flex items-center gap-3 mb-4">
+                            <div class="p-2.5 rounded-xl bg-amber-500/20 text-amber-400 border border-amber-500/30">
+                                <i class="fa-solid fa-wrench text-lg"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-heading font-bold text-base text-white">Lo que se Modifica</h3>
+                                <p class="text-xs text-slate-400">Adaptación del esquema SaaS al sector salud</p>
+                            </div>
+                        </div>
+                        <ul class="space-y-2.5 text-xs text-slate-300">
+                            <li class="flex items-start gap-2">
+                                <i class="fa-solid fa-sliders text-amber-400 mt-0.5"></i>
+                                <span><strong>Modelo de Producto:</strong> Reemplazo de Software/Licencias por Medicamentos/SKUs.</span>
+                            </li>
+                            <li class="flex items-start gap-2">
+                                <i class="fa-solid fa-sliders text-amber-400 mt-0.5"></i>
+                                <span><strong>Esquema de Precios:</strong> Listas dinámicas por volumen (Mayoreo B2B vs Público B2C).</span>
+                            </li>
+                            <li class="flex items-start gap-2">
+                                <i class="fa-solid fa-sliders text-amber-400 mt-0.5"></i>
+                                <span><strong>Cotizador B2B:</strong> Adición de Registro Sanitario, Lote y Cadena de Frío en PDF.</span>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <div class="glass-panel p-6 border-t-4 border-t-cyan-400">
+                        <div class="flex items-center gap-3 mb-4">
+                            <div class="p-2.5 rounded-xl bg-cyan-500/20 text-cyan-400 border border-cyan-500/30">
+                                <i class="fa-solid fa-plus-circle text-lg"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-heading font-bold text-base text-white">Nuevos Desarrollos</h3>
+                                <p class="text-xs text-slate-400">Módulos especializados construidos desde cero</p>
+                            </div>
+                        </div>
+                        <ul class="space-y-2.5 text-xs text-slate-300">
+                            <li class="flex items-start gap-2">
+                                <i class="fa-solid fa-microchip text-cyan-400 mt-0.5"></i>
+                                <span><strong>Verificación Sanitaria:</strong> Carga y validación de Recetas y Licencias Sanitarias.</span>
+                            </li>
+                            <li class="flex items-start gap-2">
+                                <i class="fa-solid fa-microchip text-cyan-400 mt-0.5"></i>
+                                <span><strong>Control de Lotes & Caducidad:</strong> Trazabilidad e inventario por fecha de expiración.</span>
+                            </li>
+                            <li class="flex items-start gap-2">
+                                <i class="fa-solid fa-microchip text-cyan-400 mt-0.5"></i>
+                                <span><strong>Expediente Clínico Electrónico:</strong> ECE, Kardex de enfermería y dosis unitaria.</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 2: LANDING PAGE -->
+            <section id="content-landing" class="tab-content hidden space-y-6">
+                <div class="glass-panel p-6 lg:p-8">
+                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-white/10">
+                        <div>
+                            <span class="text-xs font-mono font-bold text-cyan-400 uppercase tracking-widest">Especificación del Frontend Público</span>
+                            <h2 class="text-2xl font-heading font-extrabold text-white mt-1">Sitio Web & Landing Page</h2>
+                            <p class="text-sm text-slate-400">Diseñada para transmitir autoridad, pureza, rigor normativo y captación B2B.</p>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs px-3 py-1 rounded-full bg-cyan-500/20 border border-cyan-400/30 text-cyan-300 font-semibold">Tecnología: HTML5 / Tailwind / JS</span>
+                        </div>
+                    </div>
+
+                    <!-- Landing Sections Breakdown Grid -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
+                        
+                        <div class="glass-panel p-5 bg-slate-900/60">
+                            <div class="w-8 h-8 rounded-lg bg-cyan-500/20 text-cyan-400 flex items-center justify-center font-bold mb-3">1</div>
+                            <h3 class="font-heading font-bold text-sm text-white">Hero Section & Call to Action</h3>
+                            <p class="text-xs text-slate-400 mt-1">Propuesta de valor clara, botón "Ver Catálogo" (hacia E-commerce) y "Portal de Clientes" (hacia Login ERP/SSO).</p>
+                        </div>
+
+                        <div class="glass-panel p-5 bg-slate-900/60">
+                            <div class="w-8 h-8 rounded-lg bg-cyan-500/20 text-cyan-400 flex items-center justify-center font-bold mb-3">2</div>
+                            <h3 class="font-heading font-bold text-sm text-white">Tracking IoT en Vivo (Hero Box)</h3>
+                            <p class="text-xs text-slate-400 mt-1">Widget de búsqueda rápida por número de guía B2B con simulación de estado de temperatura en cadena de frío (2°C - 8°C).</p>
+                        </div>
+
+                        <div class="glass-panel p-5 bg-slate-900/60">
+                            <div class="w-8 h-8 rounded-lg bg-cyan-500/20 text-cyan-400 flex items-center justify-center font-bold mb-3">3</div>
+                            <h3 class="font-heading font-bold text-sm text-white">Categorías Destacadas (Grid)</h3>
+                            <p class="text-xs text-slate-400 mt-1">Accesos directos a Medicamentos, Material de Curación, Equipamiento Médico y Reactivos con enlaces dinámicos al E-commerce.</p>
+                        </div>
+
+                        <div class="glass-panel p-5 bg-slate-900/60">
+                            <div class="w-8 h-8 rounded-lg bg-cyan-500/20 text-cyan-400 flex items-center justify-center font-bold mb-3">4</div>
+                            <h3 class="font-heading font-bold text-sm text-white">Cumplimiento Normativo (Badges)</h3>
+                            <p class="text-xs text-slate-400 mt-1">Galería de certifcaciones sanitarias oficiales (COFEPRIS, ISO 9001, ISO 13485, BPM) con modales informativos de licencias.</p>
+                        </div>
+
+                        <div class="glass-panel p-5 bg-slate-900/60">
+                            <div class="w-8 h-8 rounded-lg bg-cyan-500/20 text-cyan-400 flex items-center justify-center font-bold mb-3">5</div>
+                            <h3 class="font-heading font-bold text-sm text-white">Segmentación por Perfil (Tabs)</h3>
+                            <p class="text-xs text-slate-400 mt-1">Módulos interactivos divididos para: Hospitales y Clínicas (Crédito B2B), Farmacias (Mayoreo) y Particulares (Menudeo).</p>
+                        </div>
+
+                        <div class="glass-panel p-5 bg-slate-900/60">
+                            <div class="w-8 h-8 rounded-lg bg-cyan-500/20 text-cyan-400 flex items-center justify-center font-bold mb-3">6</div>
+                            <h3 class="font-heading font-bold text-sm text-white">Formulario B2B & Pie de Página</h3>
+                            <p class="text-xs text-slate-400 mt-1">Captura rápida de leads corporativos conectada directamente con el módulo de clientes del ERP para asignación inmediata.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 3: E-COMMERCE -->
+            <section id="content-ecommerce" class="tab-content hidden space-y-6">
+                <div class="glass-panel p-6 lg:p-8">
+                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-white/10">
+                        <div>
+                            <span class="text-xs font-mono font-bold text-emerald-400 uppercase tracking-widest">Portal de Ventas Storefront & Backoffice</span>
+                            <h2 class="text-2xl font-heading font-extrabold text-white mt-1">Módulo E-Commerce (Farmacéutico & Hospitalario)</h2>
+                            <p class="text-sm text-slate-400">Venta híbrida B2C (particulares/recetas) y B2B (hospitales/crédito/mayoreo).</p>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs px-3 py-1 rounded-full bg-emerald-500/20 border border-emerald-400/30 text-emerald-300 font-semibold">Integración: Pasarela + Cotizador Existente</span>
+                        </div>
+                    </div>
+
+                    <!-- Dual Section: Storefront vs Backoffice -->
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-6">
+                        
+                        <!-- Storefront -->
+                        <div class="space-y-4">
+                            <h3 class="text-base font-heading font-bold text-emerald-400 flex items-center gap-2">
+                                <i class="fa-solid fa-store"></i> Storefront (Portal de Ventas Público / Clientes)
+                            </h3>
+                            
+                            <div class="glass-panel p-4 bg-slate-900/70 border-l-2 border-emerald-400 space-y-2">
+                                <h4 class="text-xs font-bold text-white uppercase font-mono">1. Catálogo Inteligente y Filtros Sanitarios</h4>
+                                <p class="text-xs text-slate-300">Búsqueda predictiva por **Principio Activo (Sustancia)**, laboratorio fabricante, concentración, presentación y tipo de venta (Libre / Requiere Receta / Uso Hospitalario Exclusivo).</p>
+                            </div>
+
+                            <div class="glass-panel p-4 bg-slate-900/70 border-l-2 border-emerald-400 space-y-2">
+                                <h4 class="text-xs font-bold text-white uppercase font-mono">2. Ficha de Producto de Alta Especialidad</h4>
+                                <p class="text-xs text-slate-300">Muestra datos normativos COFEPRIS, indicador de disponibilidad en stock central en tiempo real y selector de volumen con escalas de descuento para cuentas B2B.</p>
+                            </div>
+
+                            <div class="glass-panel p-4 bg-slate-900/70 border-l-2 border-emerald-400 space-y-2">
+                                <h4 class="text-xs font-bold text-white uppercase font-mono">3. Subida de Documentación Sanitaria (Receta/Licencia)</h4>
+                                <p class="text-xs text-slate-300">Paso obligatorio en checkout: Carga de receta en PDF/Foto para medicamentos controlados (B2C) o validación de Licencia Sanitaria para productos hospitalarios (B2B).</p>
+                            </div>
+
+                            <div class="glass-panel p-4 bg-slate-900/70 border-l-2 border-emerald-400 space-y-2">
+                                <h4 class="text-xs font-bold text-white uppercase font-mono">4. Checkout Bifurcado (B2C Pago / B2B Crédito)</h4>
+                                <p class="text-xs text-slate-300">Si es cliente B2C procesa pago inmediato vía pasarela reciclada. Si es B2B permite seleccionar Orden de Compra o Aplicación a Crédito Comercial.</p>
+                            </div>
+                        </div>
+
+                        <!-- Backoffice E-Commerce -->
+                        <div class="space-y-4">
+                            <h3 class="text-base font-heading font-bold text-cyan-400 flex items-center gap-2">
+                                <i class="fa-solid fa-user-gear"></i> Backoffice (Administración del E-Commerce)
+                            </h3>
+
+                            <div class="glass-panel p-4 bg-slate-900/70 border-l-2 border-cyan-400 space-y-2">
+                                <h4 class="text-xs font-bold text-white uppercase font-mono">1. Panel de Verificación Sanitaria</h4>
+                                <p class="text-xs text-slate-300">Bandeja para el Responsable Sanitario que permite autorizar o rechazar recetas subidas antes de que el pedido pase a la fase de surtido en almacén.</p>
+                            </div>
+
+                            <div class="glass-panel p-4 bg-slate-900/70 border-l-2 border-cyan-400 space-y-2">
+                                <h4 class="text-xs font-bold text-white uppercase font-mono">2. Gestión Dinámica de Precios y Proveedores</h4>
+                                <p class="text-xs text-slate-300">Configuración de precios de lista B2C vs tablas escalonadas B2B por laboratorio proveedor, asociando cada producto con su margen comercial.</p>
+                            </div>
+
+                            <div class="glass-panel p-4 bg-slate-900/70 border-l-2 border-cyan-400 space-y-2">
+                                <h4 class="text-xs font-bold text-white uppercase font-mono">3. Control de Cotizaciones Mayoristas B2B</h4>
+                                <p class="text-xs text-slate-300">Recepción de solicitudes de cotización provenientes de hospitales, adaptando la plantilla PDF reciclada para incluir términos de licitación.</p>
+                            </div>
+
+                            <div class="glass-panel p-4 bg-slate-900/70 border-l-2 border-cyan-400 space-y-2">
+                                <h4 class="text-xs font-bold text-white uppercase font-mono">4. Sincronización en Tiempo Real con ERP</h4>
+                                <p class="text-xs text-slate-300">El stock disponible en tienda online refleja instantáneamente el inventario físico liberado en el módulo central de almacén del ERP/HIS.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 4: SYSTEM CONTROL ERP / HIS -->
+            <section id="content-erp" class="tab-content hidden space-y-6">
+                <div class="glass-panel p-6 lg:p-8">
+                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-white/10">
+                        <div>
+                            <span class="text-xs font-mono font-bold text-blue-400 uppercase tracking-widest">Núcleo ERP / HIS Multientidad</span>
+                            <h2 class="text-2xl font-heading font-extrabold text-white mt-1">Sistema de Control Interno Hospitalario & ERP</h2>
+                            <p class="text-sm text-slate-400">Gestión de operaciones clínicas, expedientes, kardex de farmacia, insumos y proveedores.</p>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs px-3 py-1 rounded-full bg-blue-500/20 border border-blue-400/30 text-blue-300 font-semibold">Adaptado de: Asesores + Clientes Base</span>
+                        </div>
+                    </div>
+
+                    <!-- 5 Main Modules of ERP/HIS -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
+                        
+                        <!-- Module 1: ECE -->
+                        <div class="glass-panel p-5 bg-slate-900/70 border-t-2 border-blue-400">
+                            <div class="flex items-center gap-2 text-blue-400 mb-2">
+                                <i class="fa-solid fa-file-medical text-base"></i>
+                                <h3 class="font-heading font-bold text-sm text-white">Expediente Clínico Electrónico (ECE)</h3>
+                            </div>
+                            <p class="text-xs text-slate-300 leading-relaxed">
+                                Antecedentes del paciente, notas médicas normativas (NOM-004), signos vitales y recetario electrónico vinculado al catálogo general de productos con alerta de alergias e interacciones.
+                            </p>
+                        </div>
+
+                        <!-- Module 2: Farmacia & Kardex -->
+                        <div class="glass-panel p-5 bg-slate-900/70 border-t-2 border-emerald-400">
+                            <div class="flex items-center gap-2 text-emerald-400 mb-2">
+                                <i class="fa-solid fa-tablets text-base"></i>
+                                <h3 class="font-heading font-bold text-sm text-white">Farmacia Interna & Dosis Unitaria</h3>
+                            </div>
+                            <p class="text-xs text-slate-300 leading-relaxed">
+                                Control de Kardex para enfermería (medicamento recetado vs. administrado en cama), dispensación de insumos y alertas automáticas de reabastecimiento crítico.
+                            </p>
+                        </div>
+
+                        <!-- Module 3: Trazabilidad por Lote -->
+                        <div class="glass-panel p-5 bg-slate-900/70 border-t-2 border-cyan-400">
+                            <div class="flex items-center gap-2 text-cyan-400 mb-2">
+                                <i class="fa-solid fa-qrcode text-base"></i>
+                                <h3 class="font-heading font-bold text-sm text-white">Control de Lotes & Caducidad</h3>
+                            </div>
+                            <p class="text-xs text-slate-300 leading-relaxed">
+                                Trazabilidad estricta por número de lote de origen, semaforización de fechas de expiración cercana y registro de bitácora de temperatura para insumos de cadena de frío.
+                            </p>
+                        </div>
+
+                        <!-- Module 4: Proveedores y Laboratorios -->
+                        <div class="glass-panel p-5 bg-slate-900/70 border-t-2 border-amber-400">
+                            <div class="flex items-center gap-2 text-amber-400 mb-2">
+                                <i class="fa-solid fa-truck-field text-base"></i>
+                                <h3 class="font-heading font-bold text-sm text-white">Gestión de Proveedores & Insumos</h3>
+                            </div>
+                            <p class="text-xs text-slate-300 leading-relaxed">
+                                Padrón de laboratorios fabricantes y distribuidores. Registro de órdenes de compra, entrada a almacén central y recepción de facturas electrónicas (CFDI).
+                            </p>
+                        </div>
+
+                        <!-- Module 5: Presupuestos & Licitaciones -->
+                        <div class="glass-panel p-5 bg-slate-900/70 border-t-2 border-purple-400">
+                            <div class="flex items-center gap-2 text-purple-400 mb-2">
+                                <i class="fa-solid fa-calculator text-base"></i>
+                                <h3 class="font-heading font-bold text-sm text-white">Cotizador Interno B2B Hospitalario</h3>
+                            </div>
+                            <p class="text-xs text-slate-300 leading-relaxed">
+                                Evolución del cotizador del sistema actual: Generación de propuestas para procedimientos quirúrgicos, licitaciones públicas y paquetes de hospitalización exportables a PDF.
+                            </p>
+                        </div>
+
+                        <!-- Module 6: Personal de Salud (Adaptado) -->
+                        <div class="glass-panel p-5 bg-slate-900/70 border-t-2 border-teal-400">
+                            <div class="flex items-center gap-2 text-teal-400 mb-2">
+                                <i class="fa-solid fa-user-doctor text-base"></i>
+                                <h3 class="font-heading font-bold text-sm text-white">Personal de Salud (Base Soporte)</h3>
+                            </div>
+                            <p class="text-xs text-slate-300 leading-relaxed">
+                                Reutiliza la estructura del módulo de *Asesores de Soporte* para gestionar credenciales (cédula profesional), especialidades, turnos de guardias y asignación a pacientes.
+                            </p>
+                        </div>
+
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- Footer -->
+        <footer class="mt-auto border-t border-white/10 bg-slate-950/80 backdrop-blur-md py-4 px-4 lg:px-8 text-center text-xs text-slate-400">
+            <div class="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-2">
+                <p>&copy; 2026 PharmaSupply Ecosystem. Documento de Arquitectura y Lógica de Sistema.</p>
+                <div class="flex items-center space-x-4">
+                    <span class="text-emerald-400"><i class="fa-solid fa-circle text-[8px] me-1"></i> Paleta: Cobalto / Turquesa / Menta</span>
+                    <span class="text-cyan-400"><i class="fa-solid fa-cube text-[8px] me-1"></i> Single-File Unified Blueprint</span>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <!-- JavaScript Application Logic -->
+    <script>
+        // Tab Switcher Logic
+        function switchTab(tabId) {
+            // Hide all contents
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            
+            // Deactivate all nav buttons
+            document.querySelectorAll('.nav-tab').forEach(el => {
+                el.classList.remove('bg-gradient-to-r', 'from-cyan-600', 'to-teal-600', 'text-white', 'shadow-md');
+                el.classList.add('text-slate-300', 'hover:text-white', 'hover:bg-white/5');
+            });
+
+            // Show target content
+            document.getElementById(`content-${tabId}`).classList.remove('hidden');
+
+            // Activate target button
+            const activeBtn = document.getElementById(`tab-${tabId}`);
+            activeBtn.classList.add('bg-gradient-to-r', 'from-cyan-600', 'to-teal-600', 'text-white', 'shadow-md');
+            activeBtn.classList.remove('text-slate-300', 'hover:text-white', 'hover:bg-white/5');
+        }
+
+        // Node Inspector Data Store
+        const nodeData = {
+            'node-landing': {
+                title: 'Sitio Web & Landing Page (Frontend Público)',
+                subtitle: 'Portal Institucional B2B/B2C y Captación',
+                badge: 'Tecnología: Single Page / Responsive UI',
+                badgeColor: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30',
+                recycled: [
+                    'Componentes de UI / Maquetación base en Tailwind/CSS.',
+                    'Conector de formulario de contacto con backend de leads.'
+                ],
+                newDev: [
+                    'Widget interactivo de rastreo de carga fría por número de guía B2B.',
+                    'Módulo dinámico de visualización de certificaciones COFEPRIS / ISO.',
+                    'Segmentación por perfil con llamado a acción bifurcado (Registro B2B vs Login ERP).'
+                ],
+                details: 'Actúa como la fachada principal. Captura el tráfico de potenciales hospitales o farmacias y dirige a los clientes existentes directamente al login unificado SSO para ingresar al e-commerce o ERP.'
+            },
+            'node-ecommerce': {
+                title: 'E-Commerce (Storefront & Backoffice)',
+                subtitle: 'Venta Híbrida de Medicamentos e Insumos',
+                badge: 'Integración: Pasarela + Cotizador Existente',
+                badgeColor: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30',
+                recycled: [
+                    'Pasarela de Pagos electrónica para checkout B2C.',
+                    'Estructura del Cotizador para generar propuestas PDF B2B.',
+                    'Módulo de Clientes para historial de compras y facturación CFDI.'
+                ],
+                newDev: [
+                    'Buscador especializado con filtro por Principio Activo / Sustancia.',
+                    'Módulo de Carga de Recetas Médicas (B2C) y Licencias Sanitarias (B2B).',
+                    'Panel de Verificación Sanitaria para aprobación previa de pedidos.',
+                    'Listas de precios dinámicas (Mayoreo / Escalas por volumen).'
+                ],
+                details: 'Gestiona la transacción comercial. Conecta con el almacén central del ERP en tiempo real para evitar vender insumos sin stock físico disponible.'
+            },
+            'node-erp': {
+                title: 'Control Interno ERP / HIS Hospitalario',
+                subtitle: 'Operación Clínica, Almacén y Trazabilidad',
+                badge: 'Core del Sistema: ERP Multientidad',
+                badgeColor: 'bg-blue-500/20 text-blue-300 border-blue-500/30',
+                recycled: [
+                    'Asesores de Soporte → Reutilizado para Personal de Salud (Médicos/Enfermeros).',
+                    'Chat en tiempo real → Reutilizado para comunicación interdepartamental y Telemedicina.',
+                    'Tickets de soporte → Reutilizado para mantenimiento biomédico y solicitudes de camas.'
+                ],
+                newDev: [
+                    'Expediente Clínico Electrónico (ECE) y recetario electrónico normativo.',
+                    'Control de inventario por Número de Lote, Caducidad y Bitácora Térmica.',
+                    'Kardex de enfermería para dosis unitaria administrada a pacientes hospitalizados.',
+                    'Gestión de Proveedores de Insumos y Laboratorios de Origen.'
+                ],
+                details: 'Es el motor operacional del negocio. Mantiene la fuente de verdad del inventario central, gestiona los datos clínicos y controla la trazabilidad de los insumos sanitarios.'
+            },
+            'node-gateway': {
+                title: 'API Gateway Central & Middleware SSO',
+                subtitle: 'Integración en Tiempo Real & Seguridad JWT',
+                badge: 'Middleware: REST API + WebSockets',
+                badgeColor: 'bg-purple-500/20 text-purple-300 border-purple-500/30',
+                recycled: [
+                    'Infraestructura de autenticación JWT y roles de usuario.',
+                    'Módulo de generación y carga de facturas electrónicas XML/PDF.'
+                ],
+                newDev: [
+                    'Bus de eventos para sincronizar salidas de stock hospitalario con el E-commerce.',
+                    'Webhooks para notificación instantánea de aprobación de recetas médicas.'
+                ],
+                details: 'Garantiza que la información fluya sin fricción entre la Landing Page, la tienda online y el sistema de gestión interna manteniendo altos estándares de seguridad y auditoría sanitaria.'
+            }
+        };
+
+        // Render Inspector Node Function
+        function selectNode(nodeKey) {
+            const data = nodeData[nodeKey];
+            if (!data) return;
+
+            // Highlight active card
+            document.querySelectorAll('[id^="card-node-"]').forEach(card => {
+                card.classList.remove('ring-2', 'ring-cyan-400', 'bg-slate-800/80');
+            });
+            const activeCard = document.getElementById(`card-${nodeKey}`);
+            if(activeCard) {
+                activeCard.classList.add('ring-2', 'ring-cyan-400', 'bg-slate-800/80');
+            }
+
+            const container = document.getElementById('node-inspector');
+            container.innerHTML = `
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-white/10">
+                    <div>
+                        <span class="text-[11px] font-mono px-2.5 py-1 rounded-full border ${data.badgeColor}">${data.badge}</span>
+                        <h3 class="text-xl font-heading font-extrabold text-white mt-2">${data.title}</h3>
+                        <p class="text-xs text-slate-400">${data.subtitle}</p>
+                    </div>
+                    <button onclick="document.getElementById('node-inspector').scrollIntoView({behavior: 'smooth'})" class="text-xs text-cyan-400 hover:text-cyan-300 flex items-center gap-1">
+                        <i class="fa-solid fa-arrow-down"></i> Especificaciones Funcionales
+                    </button>
+                </div>
+
+                <div class="mt-4 text-xs text-slate-300 leading-relaxed">
+                    <p class="mb-4 bg-slate-950/50 p-3 rounded-xl border border-white/5">${data.details}</p>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="p-3.5 rounded-xl bg-emerald-950/30 border border-emerald-500/20">
+                            <h4 class="font-bold text-emerald-400 mb-2 flex items-center gap-1.5">
+                                <i class="fa-solid fa-recycle"></i> Lo que se Recicla / Adapta:
+                            </h4>
+                            <ul class="space-y-1.5 text-slate-300">
+                                ${data.recycled.map(item => `<li class="flex items-start gap-1.5"><i class="fa-solid fa-angle-right text-emerald-400 mt-0.5"></i> <span>${item}</span></li>`).join('')}
+                            </ul>
+                        </div>
+
+                        <div class="p-3.5 rounded-xl bg-cyan-950/30 border border-cyan-500/20">
+                            <h4 class="font-bold text-cyan-400 mb-2 flex items-center gap-1.5">
+                                <i class="fa-solid fa-plus-circle"></i> Lo que se Desarrolla Nuevo:
+                            </h4>
+                            <ul class="space-y-1.5 text-slate-300">
+                                ${data.newDev.map(item => `<li class="flex items-start gap-1.5"><i class="fa-solid fa-angle-right text-cyan-400 mt-0.5"></i> <span>${item}</span></li>`).join('')}
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Initialize default view on load
+        window.addEventListener('load', () => {
+            selectNode('node-landing');
+            if (window.lucide) {
+                lucide.createIcons();
+            }
+        });
+    </script>
+</body>
+</html>
